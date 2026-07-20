@@ -115,9 +115,8 @@ risc-v-monocycle-vhdl/
 │   ├── MUX_PC.vhd
 │   └── MUX_ResSCR.vhd
 ├── asm/
-│   ├── task1_alu_demo.asm
-│   ├── task2_hex_counter.asm
-│   └── task3_light_sequences.asm
+│   ├── contador.asm          # Hexadecimal counter + ALU operations demo
+│   └── secuencia.asm         # LED light sequences with DIP switch control
 ├── sim/
 │   └── waveforms/            # ModelSim/Quartus simulation screenshots
 ├── images/
