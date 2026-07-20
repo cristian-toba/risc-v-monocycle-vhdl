@@ -1,5 +1,3 @@
-# risc-v-monocycle-vhdl
-Monocycle RISC-V processor implemented in VHDL on Altera  (FPGA)
 # RISC-V Monocycle Processor — VHDL on Altera DE1 FPGA
 
 A fully functional 32-bit monocycle processor implementing the **RISC-V RV32I** architecture, designed in VHDL and synthesized on an **Altera DE1 FPGA** using Quartus II 13.0.
@@ -25,31 +23,34 @@ Developed as part of the Digital Electronics II laboratory at **Universidad Peda
 The processor follows a classic monocycle datapath where every instruction completes in a single clock cycle. All stages — fetch, decode, execute, memory access, and write-back — occur within one clock pulse.
 
 ```
-┌─────────┐    ┌──────────┐    ┌─────┐    ┌─────────┐    ┌────────────┐
-│   PC    │───▶│   ROM    │───▶│ DEC │───▶│   ALU   │───▶│  Register  │
-│ (+4)    │    │ (512x32) │    │     │    │         │    │   File     │
-└─────────┘    └──────────┘    └─────┘    └─────────┘    └────────────┘
-                                  │                              │
-                            ┌─────▼─────┐                ┌──────▼──────┐
-                            │  Control  │                │     RAM     │
-                            │  Decoder  │                │  (LW / SW)  │
-                            └───────────┘                └─────────────┘
+┌─────────┐    ┌──────────┐    ┌──────────────┐    ┌─────┐    ┌────────────┐
+│   PC    │───▶│   ROM    │───▶│ Control_unit │───▶│ ALU │───▶│  BancoReg  │
+│ (+4)    │    │ (512x32) │    │              │    │     │    │            │
+└─────────┘    └──────────┘    └──────────────┘    └─────┘    └────────────┘
+                                      │                              │
+                               ┌──────▼──────┐                ┌─────▼──────┐
+                               │Extensor_    │                │    RAM     │
+                               │Signo        │                │ (LW / SW)  │
+                               └─────────────┘                └────────────┘
 ```
 
 ### Modules
 
-| Module | Description |
-|--------|-------------|
-| `pc.vhd` | 32-bit Program Counter with synchronous reset |
-| `adder.vhd` | PC+4 incrementer |
-| `rom.vhd` | 512×32-bit instruction memory, initialized in VHDL |
-| `register_file.vhd` | 32×32-bit register bank, dual read / single write |
-| `alu.vhd` | 3-bit controlled ALU: ADD, SUB, AND, OR, SLT |
-| `sign_ext.vhd` | 2-bit controlled sign extender for I/S/B/J immediates |
-| `ram.vhd` | Data memory for LW and SW instructions |
-| `control.vhd` | Main decoder: generates Branch, Jump, BRwr, ALUsrc, ALUop, MemWr, ResSrc |
-| `alu_decoder.vhd` | ALU sub-decoder from funct3/funct7 fields |
-| `top.vhd` | Structural top-level instantiation connecting all modules |
+| File | Description |
+|------|-------------|
+| `PC.vhd` | 32-bit Program Counter with synchronous reset |
+| `SUM.vhd` | PC+4 incrementer |
+| `Sumador.vhd` | Branch target address adder |
+| `ROM.vhd` | 512×32-bit instruction memory, initialized in VHDL |
+| `BancoReg.vhd` | 32×32-bit register file, dual read / single write |
+| `ALU.vhd` | 3-bit controlled ALU: ADD, SUB, AND, OR, SLT |
+| `Extensor_Signo.vhd` | 2-bit controlled sign extender for I/S/B/J immediates |
+| `RAM.vhd` | Data memory for LW and SW instructions |
+| `Control_unit.vhd` | Main decoder: generates Branch, Jump, BRwr, ALUsrc, ALUop, MemWr, ResSrc |
+| `MUX_ALU.vhd` | Multiplexer: register vs immediate selection for ALU input |
+| `MUX_PC.vhd` | Multiplexer: PC+4 vs branch/jump target |
+| `MUX_ResSCR.vhd` | Multiplexer: ALU result vs memory data for writeback |
+| `procesador.vhd` | Structural top-level — connects all modules via port mapping |
 
 ---
 
@@ -82,7 +83,7 @@ The processor was synthesized and deployed on the Altera DE1 board. Correct exec
 
 **Task 1 — Basic ALU operations demo**
 Sequentially demonstrates `addi`, `add`, `sub`, `and`, `andi`, `or`, `ori`, `slt` with timed display stages:
-- Stage 1: first operand on display + LEDs
+- Stage 1: first operand on 7-segment display + LEDs
 - Stage 2: operation name on display
 - Stage 3: second operand on display + LEDs
 - Stage 4: result on LEDs
@@ -100,24 +101,27 @@ Cyclic 0x0–0xF counter on 7-segment display. Count frequency adjustable via im
 ```
 risc-v-monocycle-vhdl/
 ├── src/
-│   ├── pc.vhd
-│   ├── adder.vhd
-│   ├── rom.vhd
-│   ├── register_file.vhd
-│   ├── alu.vhd
-│   ├── sign_ext.vhd
-│   ├── ram.vhd
-│   ├── control.vhd
-│   ├── alu_decoder.vhd
-│   └── top.vhd
+│   ├── procesador.vhd        # Top-level structural instantiation
+│   ├── PC.vhd
+│   ├── SUM.vhd
+│   ├── Sumador.vhd
+│   ├── ROM.vhd
+│   ├── BancoReg.vhd
+│   ├── ALU.vhd
+│   ├── Extensor_Signo.vhd
+│   ├── RAM.vhd
+│   ├── Control_unit.vhd
+│   ├── MUX_ALU.vhd
+│   ├── MUX_PC.vhd
+│   └── MUX_ResSCR.vhd
 ├── asm/
 │   ├── task1_alu_demo.asm
 │   ├── task2_hex_counter.asm
 │   └── task3_light_sequences.asm
 ├── sim/
-│   └── waveforms/          # ModelSim/Quartus simulation screenshots
-├── docs/
-│   └── images/             # Hardware verification photos (DE1 board)
+│   └── waveforms/            # ModelSim/Quartus simulation screenshots
+├── images/
+│   └──                       # Hardware verification photos (DE1 board)
 └── README.md
 ```
 
